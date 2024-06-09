@@ -3,3 +3,4 @@ opencv-python-headless
 dlib
 face_recognition
 werkzeug
+python-dotenv
