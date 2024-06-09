@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Photo Release Checker</title>
+  </head>
+  <body>
+    <h1>Upload Known Faces</h1>
+    <form action="/upload_known_faces" method="post" enctype="multipart/form-data">
+      <input type="file" name="files[]" multiple>
+      <input type="submit" value="Upload Known Faces">
+    </form>
+    
+    <h1>Upload Photos to Scan</h1>
+    <form action="/scan_photos" method="post" enctype="multipart/form-data">
+      <input type="file" name="files[]" multiple>
+      <input type="submit" value="Upload Photos to Scan">
+    </form>
+  </body>
+</html>
