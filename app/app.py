@@ -8,6 +8,11 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['RESULTS_FOLDER'] = 'static/results'
 app.config['KNOWN_FACES_DIR'] = 'known_faces'
 
+# Ensure directories exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['RESULT_FOLDER'], exist_ok=True)
+os.makedirs(app.config['KNOWN_FACES_FOLDER'], exist_ok=True)
+
 @app.route('/')
 def index():
     return render_template('index.html')
