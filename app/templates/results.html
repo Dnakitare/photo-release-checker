@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Scan Results</title>
+  </head>
+  <body>
+    <h1>Scan Results</h1>
+    {% for result in results %}
+      <h2>Photo: {{ result.file }}</h2>
+      {% if result.matches %}
+        <h3>Matched Faces:</h3>
+        <ul>
+          {% for match in result.matches %}
+            <li>{{ match }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <h3>No Matches Found</h3>
+      {% endif %}
+      <img src="{{ url_for('static', filename=result.result_image) }}" alt="Result Image">
+      <br>
+    {% endfor %}
+    <a href="/">Scan More Photos</a>
+  </body>
+</html>
