@@ -11,7 +11,7 @@ def load_known_faces(known_faces_dir):
         if encodings:
             encoding = encodings[0]
             known_faces.append(encoding)
-            known_names.append(os.path.splittext(filename)[0])
+            known_names.append(os.path.splitext(filename)[0])
     return known_faces, known_names
 
 def scan_photo(photo_path, known_faces, known_names):
