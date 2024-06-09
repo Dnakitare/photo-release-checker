@@ -1,0 +1,5 @@
+Flask
+opencv-python-headless
+dlib
+face_recognition
+werkzeug
