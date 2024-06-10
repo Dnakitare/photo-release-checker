@@ -30,3 +30,7 @@ app/uploads/*
 
 # ignore the .env file
 .env
+
+# Ignore the database files
+instance/
+migrations/
