@@ -9,3 +9,12 @@ services:
       - .:/usr/src/app
     environment:
       - FLASK_ENV=development
+    command: >
+      sh -c "
+      [ ! -d 'migrations' ] && flask db init || echo 'Migrations directory already exists' &&
+      flask db migrate -m 'Initial migration.' &&
+      flask db upgrade  &&
+      flask run --host=0.0.0.0
+      "
+
+    
