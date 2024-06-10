@@ -8,6 +8,7 @@ import os
 import shutil
 import uuid
 from app.utils import load_known_faces, scan_photo_from_memory
+import base64
 
 @app.route('/')
 def index():
@@ -18,7 +19,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        hashed_password = generate_password_hash(password, method='sha256')
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
