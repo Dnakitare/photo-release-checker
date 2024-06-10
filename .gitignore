@@ -26,6 +26,7 @@ __pycache__/
 
 # Ignore the files in the known_faces directory
 app/known_faces/*
+app/uploads/*
 
 # ignore the .env file
 .env
