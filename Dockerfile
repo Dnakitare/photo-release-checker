@@ -1,13 +1,13 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Set the working directory in the container
-WORKDIR /usr/src/app
-
-# Install CMake and the other necessary build tools
+# Install CMake and other necessary build tools
 RUN apt-get update && \
     apt-get install -y cmake g++ && \
     apt-get clean
+
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
 # Copy the current directory contents into the container
 COPY . .
