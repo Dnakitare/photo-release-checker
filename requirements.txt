@@ -6,5 +6,8 @@ Flask-WTF
 opencv-python-headless
 dlib
 face_recognition
+numpy
+Pillow
 werkzeug
 python-dotenv
+gunicorn

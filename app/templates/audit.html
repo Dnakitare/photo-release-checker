@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Audit trail · Photo Release Checker{% endblock %}
+{% block content %}
+<h1>Audit trail</h1>
+<p class="lede">
+  Every privacy-relevant action — enrolling a reference, running a scan, purging
+  expired records — is one link in an HMAC-chained, append-only ledger. Each entry
+  commits to the one before it, so altering, inserting, or deleting any entry
+  breaks verification from that point forward.
+</p>
+
+{% if verified %}
+  <div class="card" style="border-color:var(--ok); background:var(--ok-bg); display:flex; align-items:center; gap:12px;">
+    <span class="badge ok" style="font-size:13px;">✓ chain verified</span>
+    <span style="color:var(--slate)">All {{ entries|length }} entr{{ 'y' if entries|length == 1 else 'ies' }} link cleanly and every signature checks out.</span>
+  </div>
+{% else %}
+  <div class="card" style="border-color:var(--flag); background:var(--flag-bg);">
+    <span class="badge flag" style="font-size:13px;">✗ chain broken</span>
+    <span style="color:var(--slate)"> {{ error }}</span>
+  </div>
+{% endif %}
+
+{% if entries %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <table>
+    <tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Payload digest</th><th>HMAC</th></tr>
+    {% for e in entries %}
+      <tr>
+        <td class="mono">{{ e.seq }}</td>
+        <td class="mono">{{ e.ts | int }}</td>
+        <td>{{ e.actor }}</td>
+        <td><span class="badge muted">{{ e.action }}</span></td>
+        <td class="mono" title="{{ e.payload_digest }}">{{ e.payload_digest[:12] }}…</td>
+        <td class="mono" title="{{ e.hmac }}">{{ e.hmac[:12] }}…</td>
+      </tr>
+      {% if e.payload_json %}
+        <tr><td></td><td colspan="5" class="mono" style="color:var(--muted); padding-top:0;">{{ e.payload_json }}</td></tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</div>
+<p class="hint">
+  Verification re-derives every HMAC with the server's key and confirms each
+  stored payload still matches its committed digest. The same check runs as a
+  standalone tool — <code>python tools/verify_audit.py</code> — against an export,
+  so a third party can confirm the log independently.
+</p>
+{% else %}
+  <p class="lede">No audit entries yet. Run a scan to populate the ledger.</p>
+{% endif %}
+{% endblock %}

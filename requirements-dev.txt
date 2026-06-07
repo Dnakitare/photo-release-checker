@@ -1,0 +1,14 @@
+# Test/CI dependencies. The heavy CV stack (dlib, face_recognition,
+# opencv-python-headless) is intentionally omitted: it is imported lazily inside
+# the recognition functions, and the test suite fakes that layer, so the full
+# governance + web wiring is exercised without a multi-minute dlib build.
+Flask
+Flask-Login
+Flask-Migrate
+Flask-SQLAlchemy
+Flask-WTF
+numpy
+Pillow
+python-dotenv
+werkzeug
+pytest
