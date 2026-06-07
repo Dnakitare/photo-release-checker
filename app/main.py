@@ -70,6 +70,9 @@ def scan():
     basis = (request.form.get("lawful_basis") or "").strip()
     tolerance = current_app.config["FACE_TOLERANCE"]
     retention_seconds = current_app.config["RETENTION_SECONDS"]
+    detector = current_app.config["FACE_DETECTOR"]
+    upsample = current_app.config["FACE_UPSAMPLE"]
+    encoding_model = current_app.config["FACE_ENCODING_MODEL"]
     audit = current_app.audit_store
     now = time.time()
 
@@ -81,7 +84,7 @@ def scan():
         if not file.filename or not _is_image(file.filename):
             continue
         label = os.path.splitext(secure_filename(file.filename))[0] or "unnamed"
-        encoding = encode_single_face(file.read())  # in memory only
+        encoding = encode_single_face(file.read(), detector, upsample, encoding_model)  # in memory only
         if encoding is None:
             flash(f"No face detected in reference '{label}' — skipped.", "warning")
             continue
@@ -121,7 +124,10 @@ def scan():
             continue
         filename = secure_filename(file.filename)
         try:
-            detections, image_arr = scan_faces(file.read(), known_arr, tolerance)
+            detections, image_arr = scan_faces(
+                file.read(), known_arr, tolerance,
+                detector=detector, upsample=upsample, encoding_model=encoding_model,
+            )
         except Exception as exc:  # one bad photo must not abort the batch
             current_app.logger.error("scan failed for %s: %s", filename, exc)
             results.append({"file": filename, "error": "could not process image"})
@@ -157,6 +163,8 @@ def scan():
             "photos": len(results),
             "faces": total_faces,
             "flagged": total_flagged,
+            "detector": detector,
+            "encoding_model": encoding_model,
         },
     )
     # Biometric material (known_encodings, image arrays) goes out of scope here.

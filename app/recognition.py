@@ -36,6 +36,37 @@ DEFAULT_TOLERANCE = 0.6
 # at the cost of speed.
 DEFAULT_MAX_WIDTH = 1024
 
+# Pluggable detector + encoder knobs. Recognition is the commodity layer here, so
+# the model is a swappable deployment choice behind this boundary — not something
+# the governance layer or end users reach into.
+#
+#   detector "hog" — fast, CPU-friendly, misses small/angled faces (the group-
+#                    photo weak spot). The sensible default.
+#   detector "cnn" — dlib's MMOD CNN; much better recall, but ~10-100x slower on
+#                    CPU. An operator/GPU choice, never a per-request one (DoS).
+#   upsample       — times to upscale before detection; raises small-face recall
+#                    at a speed/memory cost. 1 is plenty for most photos.
+#   encoding "small" (5-point) vs "large" (68-point) landmark model; "large" is
+#                    a bit more accurate at a small speed cost.
+DETECTORS = {"hog", "cnn"}
+ENCODING_MODELS = {"small", "large"}
+DEFAULT_DETECTOR = "hog"
+DEFAULT_UPSAMPLE = 1
+DEFAULT_ENCODING_MODEL = "small"
+
+
+def validate_recognition_config(detector: str, encoding_model: str, upsample: int) -> None:
+    """Fail fast on a bad recognition config (called at app startup).
+
+    Pure — no model loading — so it can validate config without importing dlib.
+    """
+    if detector not in DETECTORS:
+        raise ValueError(f"detector must be one of {sorted(DETECTORS)}, got {detector!r}")
+    if encoding_model not in ENCODING_MODELS:
+        raise ValueError(f"encoding model must be one of {sorted(ENCODING_MODELS)}, got {encoding_model!r}")
+    if not isinstance(upsample, int) or upsample < 0:
+        raise ValueError(f"upsample must be a non-negative int, got {upsample!r}")
+
 
 def face_distance(known: np.ndarray, encoding: np.ndarray) -> np.ndarray:
     """Euclidean distance from one encoding to each known encoding.
@@ -74,7 +105,12 @@ def _to_rgb_array(image_bytes: bytes, max_width: int) -> np.ndarray:
     return np.array(image)
 
 
-def encode_single_face(image_bytes: bytes) -> Optional[np.ndarray]:
+def encode_single_face(
+    image_bytes: bytes,
+    detector: str = DEFAULT_DETECTOR,
+    upsample: int = DEFAULT_UPSAMPLE,
+    encoding_model: str = DEFAULT_ENCODING_MODEL,
+) -> Optional[np.ndarray]:
     """Encode the most prominent face in an enrollment image, in memory.
 
     Returns ``None`` if no face is found. Used when adding someone to the
@@ -84,12 +120,14 @@ def encode_single_face(image_bytes: bytes) -> Optional[np.ndarray]:
     import face_recognition  # local import: keep dlib out of import-time cost
 
     array = _to_rgb_array(image_bytes, DEFAULT_MAX_WIDTH)
-    locations = face_recognition.face_locations(array)
+    locations = face_recognition.face_locations(
+        array, number_of_times_to_upsample=upsample, model=detector
+    )
     if not locations:
         return None
     # Pick the largest face (closest to camera) for the most reliable template.
     locations.sort(key=lambda b: (b[2] - b[0]) * (b[1] - b[3]), reverse=True)
-    encodings = face_recognition.face_encodings(array, [locations[0]])
+    encodings = face_recognition.face_encodings(array, [locations[0]], model=encoding_model)
     return encodings[0] if encodings else None
 
 
@@ -107,6 +145,9 @@ def scan_faces(
     known_encodings: np.ndarray,
     tolerance: float = DEFAULT_TOLERANCE,
     max_width: int = DEFAULT_MAX_WIDTH,
+    detector: str = DEFAULT_DETECTOR,
+    upsample: int = DEFAULT_UPSAMPLE,
+    encoding_model: str = DEFAULT_ENCODING_MODEL,
 ) -> tuple[list[Detection], np.ndarray]:
     """Detect and match every face in a photo, in memory.
 
@@ -117,8 +158,10 @@ def scan_faces(
     import face_recognition
 
     array = _to_rgb_array(image_bytes, max_width)
-    locations = face_recognition.face_locations(array)
-    encodings = face_recognition.face_encodings(array, locations)
+    locations = face_recognition.face_locations(
+        array, number_of_times_to_upsample=upsample, model=detector
+    )
+    encodings = face_recognition.face_encodings(array, locations, model=encoding_model)
 
     detections = []
     for location, encoding in zip(locations, encodings):

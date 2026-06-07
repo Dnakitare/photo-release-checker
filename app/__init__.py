@@ -66,10 +66,23 @@ def create_app(config: dict | None = None) -> Flask:
         # Default scan threshold + retention window; both operator-tunable.
         FACE_TOLERANCE=0.6,
         RETENTION_SECONDS=90 * 24 * 60 * 60,
+        # Recognition model knobs (deployment-level, never per-request — "cnn"
+        # is far slower and would be a DoS vector if user-selectable).
+        FACE_DETECTOR=os.getenv("FACE_DETECTOR", "hog"),
+        FACE_UPSAMPLE=int(os.getenv("FACE_UPSAMPLE", "1")),
+        FACE_ENCODING_MODEL=os.getenv("FACE_ENCODING_MODEL", "small"),
     )
     if config:
         app.config.update(config)
     app.config["SECRET_KEY"] = _resolve_secret(app)
+
+    from app.recognition import validate_recognition_config
+
+    validate_recognition_config(
+        app.config["FACE_DETECTOR"],
+        app.config["FACE_ENCODING_MODEL"],
+        app.config["FACE_UPSAMPLE"],
+    )
 
     db.init_app(app)
     migrate.init_app(app, db)

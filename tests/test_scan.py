@@ -18,9 +18,9 @@ from tests.conftest import login, register
 
 def _fake_cv(monkeypatch, *, matched: bool):
     """Patch encode/scan/annotate so a scan resolves deterministically."""
-    monkeypatch.setattr(main, "encode_single_face", lambda data: np.zeros(128))
+    monkeypatch.setattr(main, "encode_single_face", lambda data, *a, **k: np.zeros(128))
 
-    def fake_scan(data, known, tolerance=0.6, max_width=1024):
+    def fake_scan(data, known, tolerance=0.6, max_width=1024, **kwargs):
         idx = 0 if (matched and len(known) > 0) else None
         det = Detection(location=(0, 10, 10, 0), matched_index=idx, distance=0.3)
         return [det], np.zeros((10, 10, 3), dtype=np.uint8)
