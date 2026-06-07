@@ -1,25 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# Install CMake and other necessary build tools
+# dlib needs a C++ toolchain + cmake to build its wheel.
 RUN apt-get update && \
-    apt-get install -y cmake g++ && \
-    apt-get clean
+    apt-get install -y --no-install-recommends cmake g++ && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Set PYTHONPATH
-ENV PYTHONPATH="${PYTHONPATH}:/usr/src/app"
-
-# Copy the current directory contents into the container
-COPY . .
-
-# Install any needed packages specified in requirements.txt
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside this container
+COPY . .
+
 EXPOSE 5000
 
-# Run app.py when the container launches
-CMD ["python", "app/__init__.py"]
+# Production server. The app factory creates tables on startup; the instance/
+# directory (SQLite app DB + audit ledger) should be a mounted volume so data
+# and the tamper-evident log persist across container restarts.
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "wsgi:app"]

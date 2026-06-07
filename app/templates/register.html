@@ -1,18 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Register</title>
-</head>
-<body>
-    <h1>Register</h1>
-    <form action="{{ url_for('register') }}" method="post">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <input type="submit" value="Register">
+{% extends "base.html" %}
+{% block title %}Register · Photo Release Checker{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <h1>Create an account</h1>
+  <div class="card">
+    <form action="{{ url_for('auth.register') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required autofocus>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required>
+      <p class="hint">At least 8 characters.</p>
+      <button type="submit" style="margin-top:12px; width:100%">Register</button>
     </form>
-    <p><a href="{{ url_for('login') }}">Login</a> if you already have an account.</p>
-</body>
-</html>
+  </div>
+  <p class="hint" style="text-align:center">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a>.</p>
+</div>
+{% endblock %}

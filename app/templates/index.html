@@ -1,26 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Photo Release Checker</title>
-</head>
-<body>
-    <h1>Welcome to Photo Release Checker</h1>
-    {% if current_user.is_authenticated %}
-        <p>Hello, {{ current_user.username }}! <a href="{{ url_for('logout') }}">Logout</a></p>
-        <h2>Upload Known Faces</h2>
-        <form action="{{ url_for('upload_known_faces') }}" method="post" enctype="multipart/form-data">
-            <input type="file" name="files[]" multiple>
-            <input type="submit" value="Upload Known Faces">
-        </form>
-        
-        <h2>Upload Photos to Scan</h2>
-        <form action="{{ url_for('scan_photos') }}" method="post" enctype="multipart/form-data">
-            <input type="file" name="files[]" multiple>
-            <input type="submit" value="Upload Photos to Scan">
-        </form>
-    {% else %}
-        <p><a href="{{ url_for('login') }}">Login</a> or <a href="{{ url_for('register') }}">Register</a> to continue.</p>
-    {% endif %}
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<h1>Scan a batch of photos</h1>
+<p class="lede">
+  Upload reference faces, tag the consent basis you hold for them, then scan a
+  batch of photos. Faces are matched in memory and discarded the moment the scan
+  finishes — only the consent metadata and an audit-ledger entry persist.
+</p>
+
+<form action="{{ url_for('main.scan') }}" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="card">
+    <h2 style="margin-top:0">1 · Reference faces</h2>
+    <label for="reference_faces">Upload one clear photo per person</label>
+    <input type="file" id="reference_faces" name="reference_faces" accept=".jpg,.jpeg,.png" multiple>
+    <p class="hint">The filename becomes the person's label (e.g. <code>jane-doe.jpg</code> → "jane-doe").</p>
+
+    <div class="row">
+      <div>
+        <label for="consent_status">Consent status</label>
+        <select id="consent_status" name="consent_status">
+          {% for s in statuses %}<option value="{{ s.value }}" {% if s.value=='declined' %}selected{% endif %}>{{ s.value }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="mode">Scan mode</label>
+        <select id="mode" name="mode">
+          <option value="flag_matches" selected>Denylist — flag photos containing these people</option>
+          <option value="flag_non_matches">Allowlist — flag faces NOT on this consented list</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="lawful_basis">Lawful basis</label>
+    <textarea id="lawful_basis" name="lawful_basis" placeholder="e.g. Guardian declined photo-release form, 2024-06-01"></textarea>
+    <p class="hint">Recorded with the consent metadata and committed to the audit ledger.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">2 · Photos to scan</h2>
+    <label for="photos">Upload the batch to check</label>
+    <input type="file" id="photos" name="photos" accept=".jpg,.jpeg,.png" multiple>
+  </div>
+
+  <button type="submit">Run scan</button>
+</form>
+
+<h2>Consent registry</h2>
+{% if records %}
+  <p class="lede" style="margin-bottom:10px">{{ records|length }} individual(s) on file. <a href="{{ url_for('main.registry') }}">Manage registry →</a></p>
+{% else %}
+  <p class="lede">No consent records yet — they're created when you enroll reference faces above.</p>
+{% endif %}
+{% endblock %}
