@@ -1,20 +1,16 @@
-version: '3.8'
-
 services:
   web:
     build: .
     ports:
       - "5001:5000"
-    volumes:
-      - .:/usr/src/app
     environment:
-      - FLASK_ENV=development
-    command: >
-      sh -c "
-      [ ! -d 'migrations' ] && flask db init || echo 'Migrations directory already exists' &&
-      flask db migrate -m 'Initial migration.' &&
-      flask db upgrade  &&
-      flask run --host=0.0.0.0
-      "
+      # Required in production. For local trial these have dev fallbacks, but set
+      # them so the audit ledger stays verifiable across restarts.
+      - SECRET_KEY=${SECRET_KEY:-dev-only-secret-change-me}
+      - AUDIT_KEY=${AUDIT_KEY:-dev-only-audit-key-change-me}
+    volumes:
+      # Persist the SQLite app DB and the tamper-evident audit ledger.
+      - app-instance:/usr/src/app/instance
 
-    
+volumes:
+  app-instance:

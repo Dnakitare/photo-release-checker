@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Consent registry · Photo Release Checker{% endblock %}
+{% block content %}
+<h1>Consent registry</h1>
+<p class="lede">
+  The durable record of whose consent basis you hold and until when. No biometric
+  templates are stored here — only governance metadata. Records past their
+  retention window can be purged; the purge is itself recorded in the audit trail.
+</p>
+
+{% if records %}
+<div class="card" style="padding:0; overflow:hidden;">
+  <table>
+    <tr><th>Label</th><th>Consent</th><th>Lawful basis</th><th>Enrolled</th><th>Retention</th></tr>
+    {% for r in records %}
+      <tr>
+        <td><strong>{{ r.label }}</strong></td>
+        <td>
+          {% if r.consent_status == 'consented' %}<span class="badge ok">consented</span>
+          {% elif r.consent_status == 'declined' %}<span class="badge flag">declined</span>
+          {% else %}<span class="badge muted">unknown</span>{% endif %}
+        </td>
+        <td>{{ r.lawful_basis or '—' }}</td>
+        <td class="mono">{{ r.enrolled_at | int }}</td>
+        <td>
+          {% if r.retention_expiry <= now %}<span class="badge warn">expired</span>
+          {% else %}<span class="badge muted">{{ ((r.retention_expiry - now) / 86400) | round(1) }}d left</span>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<form action="{{ url_for('main.purge') }}" method="post" style="margin-top:8px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn danger">Purge expired records</button>
+</form>
+{% else %}
+  <p class="lede">No consent records on file yet.</p>
+  <a class="btn" href="{{ url_for('main.index') }}">Enroll faces in a scan →</a>
+{% endif %}
+{% endblock %}

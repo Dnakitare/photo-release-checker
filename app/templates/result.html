@@ -1,26 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Scan Results</title>
-  </head>
-  <body>
-    <h1>Scan Results</h1>
-    {% for result in results %}
-      <h2>Photo: {{ result.file }}</h2>
-      {% if result.matches %}
-        <h3>Matched Faces:</h3>
-        <ul>
-          {% for match in result.matches %}
-            <li>{{ match }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <h3>No Matches Found</h3>
-      {% endif %}
-      <img src="data:image/jpeg;base64,{{ result.result_image }}" alt="Result Image">
-      <br>
-    {% endfor %}
-    <a href="/">Scan More Photos</a>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}Scan results · Photo Release Checker{% endblock %}
+{% block content %}
+<h1>Scan results</h1>
+<p class="lede">
+  Mode: <strong>{{ mode.value }}</strong> ·
+  {% if total_flagged %}<span class="badge flag">{{ total_flagged }} face(s) need review</span>
+  {% else %}<span class="badge ok">nothing flagged</span>{% endif %}
+  · This scan has been written to the <a href="{{ url_for('main.audit_trail') }}">audit trail</a>.
+</p>
+
+{% for r in results %}
+  <div class="card">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <strong>{{ r.file }}</strong>
+      {% if r.error %}<span class="badge warn">{{ r.error }}</span>
+      {% elif r.needs_review %}<span class="badge flag">{{ r.flagged }}/{{ r.faces }} flagged</span>
+      {% else %}<span class="badge ok">{{ r.faces }} face(s), clear</span>{% endif %}
+    </div>
+    {% if r.image %}
+      <img src="data:image/jpeg;base64,{{ r.image }}" alt="Annotated scan of {{ r.file }}"
+           style="max-width:100%; border-radius:8px; margin-top:12px;">
+    {% endif %}
+    {% if r.decisions %}
+      <table style="margin-top:12px">
+        <tr><th>Face</th><th>Verdict</th><th>Reason</th></tr>
+        {% for d in r.decisions %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{% if d.flagged %}<span class="badge flag">flag</span>{% else %}<span class="badge ok">ok</span>{% endif %}</td>
+            <td>{{ d.reason }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% endif %}
+  </div>
+{% endfor %}
+
+<a class="btn ghost" href="{{ url_for('main.index') }}">← Scan another batch</a>
+{% endblock %}
