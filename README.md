@@ -68,6 +68,32 @@ gunicorn wsgi:app             # prod
 `AUDIT_KEY` must stay stable across restarts — it signs the ledger, so a changed
 key invalidates past entries.
 
+## Recognition model (tunable)
+
+Recognition is the commodity layer here, so the detector sits behind a swappable
+boundary and is a **deployment-level** choice — never per-request, since the CNN
+path is far slower and would otherwise be a DoS vector.
+
+| Env var | Default | Notes |
+|---|---|---|
+| `FACE_DETECTOR` | `hog` | `hog` (fast, CPU) or `cnn` (better recall, GPU-friendly, slow on CPU) |
+| `FACE_UPSAMPLE` | `1` | times to upscale before detection; higher finds smaller faces, slower |
+| `FACE_ENCODING_MODEL` | `small` | `small` (5-point) or `large` (68-point landmarks) |
+
+Measured on a 9-person group photo (1024px, CPU), enrolling one reference face:
+
+| Detector | Faces found | Reference matched | Time |
+|---|---|---|---|
+| `hog` | 6 | ✓ (0.570) | 0.2s |
+| `cnn` | 8 | ✓ (0.558) | 2.5s |
+
+CNN recovers the small/angled faces HOG misses, at ~12× the latency — pick per
+deployment. (Notably, bumping `FACE_UPSAMPLE` did *not* help on this image and
+shifted the reference crop enough to break the match; more preprocessing isn't
+free.) Swapping in a different detector entirely (RetinaFace, SCRFD) is a matter
+of replacing the calls in `app/recognition.py` — the governance layer is
+unaffected.
+
 ## Verify the audit log yourself
 
 The "prove it" tool checks an exported ledger with nothing but the signing key:
@@ -87,7 +113,7 @@ FAIL: audit chain broken at seq=0: stored payload does not match its digest
 
 ```bash
 pip install -r requirements-dev.txt
-pytest -q        # 46 tests
+pytest -q        # 57 tests
 ```
 
 The suite runs without the dlib/OpenCV stack — the CV layer is imported lazily
